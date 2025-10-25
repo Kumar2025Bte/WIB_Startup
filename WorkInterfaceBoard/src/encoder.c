@@ -14,7 +14,6 @@ static encoder_data_t encoder2_data = {0};
 static void encoder_pioa_isr(uint32_t id, uint32_t mask);
 static inline void encoder_handle_rising_on_a(encoder_data_t *enc_data, uint32_t other_level);
 static inline void encoder_handle_rising_on_b(encoder_data_t *enc_data, uint32_t other_level);
-static inline uint32_t get_time_ms_from_isr(void);
 
 // CAN message IDs for encoder data
 #define CAN_ID_ENCODER1_DIR_VEL    0x130u  // Encoder 1 direction and velocity
@@ -53,16 +52,19 @@ bool encoder_init(void)
         pio_clear(PIOD, ENC2_ENABLE_PIN);  // Enable encoder 2 (active-low)
     }
     // Set up external interrupts on rising edges (X2 decoding on A and B rising)
-    uint32_t enc_mask = (ENC1_A_PIN | ENC1_B_PIN);
+    // Register per-pin interrupt sources so the handler receives the exact pin mask
+    pio_handler_set(PIOA, ID_PIOA, ENC1_A_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+    pio_enable_interrupt(PIOA, ENC1_A_PIN);
+    pio_handler_set(PIOA, ID_PIOA, ENC1_B_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+    pio_enable_interrupt(PIOA, ENC1_B_PIN);
     if (ENCODER2_AVAILABLE) {
-        enc_mask |= (ENC2_A_PIN | ENC2_B_PIN);
+        pio_handler_set(PIOA, ID_PIOA, ENC2_A_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+        pio_enable_interrupt(PIOA, ENC2_A_PIN);
+        pio_handler_set(PIOA, ID_PIOA, ENC2_B_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+        pio_enable_interrupt(PIOA, ENC2_B_PIN);
     }
-
-    // Attach handler for PIOA
-    pio_handler_set(PIOA, ID_PIOA, enc_mask, (PIO_IT_EDGE | PIO_IT_RISE_EDGE), encoder_pioa_isr);
-    pio_enable_interrupt(PIOA, enc_mask);
-    // Set NVIC priority to be safe with FreeRTOS FromISR API usage
-    pio_handler_set_priority(PIOA, PIOA_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+    // Lower priority than max syscall to avoid any ISR/RTOS priority issues
+    pio_handler_set_priority(PIOA, PIOA_IRQn, (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 1));
 
     // Initialize encoder data structures
     encoder1_data.position = 0;
@@ -254,11 +256,6 @@ void encoder_task(void *arg)
 }
 
 // ===== Interrupt-driven quadrature decoding (X2 on rising edges) =====
-static inline uint32_t get_time_ms_from_isr(void)
-{
-    // Use FreeRTOS tick count in ISR context
-    return xTaskGetTickCountFromISR() * portTICK_PERIOD_MS;
-}
 
 static inline void encoder_handle_rising_on_a(encoder_data_t *enc_data, uint32_t other_level)
 {
@@ -271,7 +268,7 @@ static inline void encoder_handle_rising_on_a(encoder_data_t *enc_data, uint32_t
         enc_data->direction = 2u;
     }
     enc_data->pulse_count++;
-    enc_data->last_update_time = get_time_ms_from_isr();
+    // Avoid calling RTOS API from ISR; timestamping not required for velocity calc
 }
 
 static inline void encoder_handle_rising_on_b(encoder_data_t *enc_data, uint32_t other_level)
@@ -285,7 +282,7 @@ static inline void encoder_handle_rising_on_b(encoder_data_t *enc_data, uint32_t
         enc_data->direction = 1u;
     }
     enc_data->pulse_count++;
-    enc_data->last_update_time = get_time_ms_from_isr();
+    // Avoid calling RTOS API from ISR; timestamping not required for velocity calc
 }
 
 static void encoder_pioa_isr(uint32_t id, uint32_t mask)

@@ -1,0 +1,28 @@
+Signal,MCU_Port/Name,Pin_Number,Function/Usage,Notes
+I2C_SCL,PA4,55,I2C SCL,Primary I2C bus SCL (I2C[0..1])
+I2C_SDA,PA3,64,I2C SDA,Primary I2C bus SDA (I2C[0..1])
+ENC1_A,PA5/TIOA0,52,Encoder A input,Encoder1 A channel (TIOA0)
+ENC1_B,PA1/TIOB0,70,Encoder B input,Encoder1 B channel (TIOB0)
+ENC1_ENABLE,PD17,53,Encoder enable,Encoder1 enable line (PD17/ENABLE1)
+ENC2_A,PA15/TIOA1,33,Encoder A input,Encoder2 A channel (TIOA1)
+ENC2_B,PA16/TIOB1,30,Encoder B input,Encoder2 B channel (TIOB1)
+ENC2_ENABLE,PD27,32,Encoder enable,Encoder2 enable line (PD27/ENABLE2)
+LED_DATA,PD22/PWMH2,41,LED ring data / PWM,LED ring control (LED_PWM.LED_DATA)
+CAN_TX,PB2/CANTX0,17,CAN TX,CAN bus 0 TX (PB2)
+CAN_RX,PB3/CANRX0,20,CAN RX,CAN bus 0 RX (PB3)
+FAN_FAULT,PD25,35,FAN Fault input,FAN_CTRL.FAULT (monitor)
+FAN_FULL_ON,PD24,37,FAN Full On control,FAN_CTRL.FULL_ON (control)
+ACCEL_CTRL_1,PA19/PGMD7,14,Accelerometer control,ACCEL control pin (PGMD7)
+ACCEL_CTRL_2,PA20/PGMD8,13,Accelerometer control,ACCEL control pin (PGMD8)
+SWDIO,PB6,57,SWD Data,SW debug I/O (PB6/SWDIO)
+SWCLK,PB7,63,SWD Clock,SW debug clock (PB7/SWCLK)
+NRST,NRST,58,Reset,Hardware reset pin
+XIN,PB9,99,Crystal input,Main oscillator XIN (PB9)
+XOUT,PB8,98,Crystal output,Main oscillator XOUT (PB8)
+CAN_TX1,PB? ,?,CAN1 TX,copy of CAN_TX
+CAN_RX1,PB? ,?,CAN1 RX,copy of CAN_RX
+VDDIO,VDDIO,19,Power,VDDIO pin (from U15)
+VDDIN,VDDIN,5,Power,VDDIN (core supply input)
+ADVREF,ADVREF,9,Analog reference,Analog reference input (ADVREF)
+VDDOUT,VDDOUT,4,Power,VDD regulator output pin
+VDDCORE,VDDCORE,18/22/86,Core supply,VDDCORE pins (multiple as per device)

@@ -1,0 +1,140 @@
+################################################################################
+# Simplified Makefile for Linux compilation
+################################################################################
+
+SHELL := /bin/bash
+RM := rm -rf
+
+# Compiler and tools
+CC := arm-none-eabi-gcc
+OBJCOPY := arm-none-eabi-objcopy
+OBJDUMP := arm-none-eabi-objdump
+SIZE := arm-none-eabi-size
+
+# Target
+TARGET := TorqueInterfaceBoard
+
+# Directories
+SRC_DIR := ../src
+ASF_DIR := ../src/ASF
+DEVICE_DIR := ../Device_Startup
+
+# Include paths
+INCLUDES := -I$(ASF_DIR)/common/boards \
+            -I$(ASF_DIR)/sam/utils \
+            -I$(ASF_DIR)/sam/utils/header_files \
+            -I$(ASF_DIR)/sam/utils/preprocessor \
+            -I$(ASF_DIR)/thirdparty/CMSIS/Include \
+            -I$(ASF_DIR)/thirdparty/CMSIS/Lib/GCC \
+            -I$(ASF_DIR)/sam/utils/fpu \
+            -I$(ASF_DIR)/common/utils \
+            -I$(ASF_DIR)/sam/utils/cmsis/sam4e/include \
+            -I$(ASF_DIR)/sam/utils/cmsis/sam4e/source/templates \
+            -I$(ASF_DIR)/common/boards/user_board \
+            -I$(SRC_DIR) \
+            -I$(SRC_DIR)/config \
+            -I$(ASF_DIR)/sam/drivers/can \
+            -I$(ASF_DIR)/sam/drivers/pio \
+            -I$(ASF_DIR)/sam/drivers/pmc \
+            -I$(ASF_DIR)/common/services/clock \
+            -I$(ASF_DIR)/common/services/delay \
+            -I$(ASF_DIR)/common/services/gpio \
+            -I$(ASF_DIR)/common/services/spi/sam_spi \
+            -I$(ASF_DIR)/common/services/spi \
+            -I$(ASF_DIR)/common/services/twi \
+            -I$(ASF_DIR)/sam/drivers/spi \
+            -I$(ASF_DIR)/sam/drivers/twi \
+            -I$(ASF_DIR)/sam/include/component \
+            -I$(ASF_DIR)/thirdparty/freertos/freertos-7.3.0/source/include \
+            -I$(ASF_DIR)/thirdparty/freertos/freertos-7.3.0/source/portable/gcc/sam_cm4f
+
+# Compiler flags
+CFLAGS := -x c -mthumb -D__SAM4E8C__ -DDEBUG -Dscanf=iscanf -DBOARD=USER_BOARD \
+          -DBOARD_FREQ_MAINCK_XTAL=16000000UL -DARM_MATH_CM4=true -Dprintf=iprintf \
+          -D__FREERTOS__ -O1 -fdata-sections -ffunction-sections -mlong-calls -g3 \
+          -Wall -mcpu=cortex-m4 -c -pipe -fno-strict-aliasing -Wall \
+          -Wstrict-prototypes -Wmissing-prototypes -Werror-implicit-function-declaration \
+          -Wpointer-arith -std=gnu99 -ffunction-sections -fdata-sections \
+          -Wchar-subscripts -Wcomment -Wformat=2 -Wimplicit-int -Wmain \
+          -Wparentheses -Wsequence-point -Wreturn-type -Wswitch -Wtrigraphs \
+          -Wunused -Wuninitialized -Wunknown-pragmas -Wfloat-equal -Wundef \
+          -Wshadow -Wbad-function-cast -Wwrite-strings -Wsign-compare \
+          -Waggregate-return -Wmissing-declarations -Wformat \
+          -Wmissing-format-attribute -Wno-deprecated-declarations -Wpacked \
+          -Wredundant-decls -Wnested-externs -Wlong-long -Wunreachable-code \
+          -Wcast-align --param max-inline-insns-single=500 -mfloat-abi=softfp \
+          -mfpu=fpv4-sp-d16
+
+# Linker flags
+LDFLAGS := -mthumb -Wl,-Map="$(TARGET).map" -Wl,--start-group \
+           -lm -Wl,--end-group \
+           -Wl,--gc-sections -mcpu=cortex-m4 -Wl,--entry=Reset_Handler \
+           -Wl,--cref -mthumb -T$(ASF_DIR)/sam/utils/linker_scripts/sam4e/sam4e8/gcc/flash.ld
+
+# Source files
+C_SOURCES := $(DEVICE_DIR)/startup_sam4e.c \
+             $(DEVICE_DIR)/system_sam4e.c \
+             ../main.c \
+             $(SRC_DIR)/ad5252.c \
+             $(ASF_DIR)/common/boards/user_board/board_init.c \
+             $(ASF_DIR)/common/services/spi/sam_spi/spi_master.c \
+             $(ASF_DIR)/sam/drivers/pio/pio_handler.c \
+             $(ASF_DIR)/sam/drivers/spi/spi.c \
+             $(ASF_DIR)/sam/drivers/twi/twi.c \
+             $(ASF_DIR)/thirdparty/freertos/freertos-7.3.0/source/FreeRTOS_CLI.c \
+             $(ASF_DIR)/thirdparty/freertos/freertos-7.3.0/source/list.c \
+             $(ASF_DIR)/thirdparty/freertos/freertos-7.3.0/source/portable/gcc/sam_cm4f/port.c \
+             $(ASF_DIR)/thirdparty/freertos/freertos-7.3.0/source/portable/memmang/heap_4.c \
+             $(ASF_DIR)/thirdparty/freertos/freertos-7.3.0/source/queue.c \
+             $(ASF_DIR)/thirdparty/freertos/freertos-7.3.0/source/tasks.c \
+             $(ASF_DIR)/thirdparty/freertos/freertos-7.3.0/source/timers.c \
+             $(SRC_DIR)/can_app.c \
+             $(SRC_DIR)/i2c0.c \
+             $(SRC_DIR)/lis2_i2c.c \
+             $(SRC_DIR)/spi0.c \
+             $(SRC_DIR)/tasks.c \
+             $(SRC_DIR)/toolsense.c \
+             $(ASF_DIR)/common/services/delay/sam/cycle_counter.c \
+             $(ASF_DIR)/common/services/clock/sam4e/sysclk.c \
+             $(ASF_DIR)/sam/drivers/can/can.c \
+             $(ASF_DIR)/sam/drivers/pio/pio.c \
+             $(ASF_DIR)/sam/drivers/pmc/pmc.c \
+             $(ASF_DIR)/sam/drivers/pmc/sleep.c \
+             $(ASF_DIR)/common/utils/interrupt/interrupt_sam_nvic.c \
+             $(ASF_DIR)/sam/utils/syscalls/gcc/syscalls.c
+
+# Object files
+OBJECTS := $(C_SOURCES:%.c=%.o)
+
+# Default target
+all: $(TARGET).elf $(TARGET).bin $(TARGET).hex
+
+# Build ELF file
+$(TARGET).elf: $(OBJECTS)
+	@echo "Linking $@"
+	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
+	$(SIZE) $@
+
+# Build binary file
+$(TARGET).bin: $(TARGET).elf
+	@echo "Creating $@"
+	$(OBJCOPY) -O binary $< $@
+
+# Build hex file
+$(TARGET).hex: $(TARGET).elf
+	@echo "Creating $@"
+	$(OBJCOPY) -O ihex -R .eeprom -R .fuse -R .lock -R .signature $< $@
+
+# Compile C files
+%.o: %.c
+	@echo "Compiling $<"
+	$(CC) $(CFLAGS) $(INCLUDES) -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)" -o $@ $<
+
+# Clean
+clean:
+	$(RM) $(OBJECTS) $(OBJECTS:%.o=%.d) $(TARGET).elf $(TARGET).bin $(TARGET).hex $(TARGET).map
+
+# Include dependency files
+-include $(OBJECTS:%.o=%.d)
+
+.PHONY: all clean

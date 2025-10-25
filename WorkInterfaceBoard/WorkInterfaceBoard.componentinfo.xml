@@ -1,0 +1,191 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Store xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="AtmelPackComponentManagement">
+	<ProjectComponents>
+		<ProjectComponent z:Id="i1" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/">
+			<CApiVersion></CApiVersion>
+			<CBundle></CBundle>
+			<CClass>CMSIS</CClass>
+			<CGroup>CORE</CGroup>
+			<CSub></CSub>
+			<CVariant></CVariant>
+			<CVendor>ARM</CVendor>
+			<CVersion>5.1.2</CVersion>
+			<DefaultRepoPath>C:/Atmel\Studio\7.0\Packs</DefaultRepoPath>
+			<DependentComponents xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+			<Description></Description>
+			<Files xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\arm\CMSIS\5.4.0\CMSIS\Documentation\Core\html\index.html</AbsolutePath>
+					<Attribute></Attribute>
+					<Category>doc</Category>
+					<Condition></Condition>
+					<FileContentHash i:nil="true" />
+					<FileVersion></FileVersion>
+					<Name>CMSIS/Documentation/Core/html/index.html</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\arm\CMSIS\5.4.0\CMSIS\Core\Include\</AbsolutePath>
+					<Attribute></Attribute>
+					<Category>include</Category>
+					<Condition></Condition>
+					<FileContentHash i:nil="true" />
+					<FileVersion></FileVersion>
+					<Name>CMSIS/Core/Include/</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+			</Files>
+			<PackName>CMSIS</PackName>
+			<PackPath>C:/Atmel/Studio/7.0/Packs/arm/CMSIS/5.4.0/ARM.CMSIS.pdsc</PackPath>
+			<PackVersion>5.4.0</PackVersion>
+			<PresentInProject>true</PresentInProject>
+			<ReferenceConditionId>ARMv6_7_8-M Device</ReferenceConditionId>
+			<RteComponents xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+				<d4p1:string></d4p1:string>
+			</RteComponents>
+			<Status>Resolved</Status>
+			<VersionMode>Fixed</VersionMode>
+			<IsComponentInAtProject>true</IsComponentInAtProject>
+		</ProjectComponent>
+		<ProjectComponent z:Id="i2" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/">
+			<CApiVersion></CApiVersion>
+			<CBundle></CBundle>
+			<CClass>Device</CClass>
+			<CGroup>Startup</CGroup>
+			<CSub></CSub>
+			<CVariant></CVariant>
+			<CVendor>Atmel</CVendor>
+			<CVersion>1.1.0</CVersion>
+			<DefaultRepoPath>C:/Atmel\Studio\7.0\Packs</DefaultRepoPath>
+			<DependentComponents xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+				<d4p1:anyType z:Ref="i1" />
+			</DependentComponents>
+			<Description></Description>
+			<Files xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\include</AbsolutePath>
+					<Attribute></Attribute>
+					<Category>include</Category>
+					<Condition>C</Condition>
+					<FileContentHash i:nil="true" />
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/include</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\include\sam.h</AbsolutePath>
+					<Attribute></Attribute>
+					<Category>header</Category>
+					<Condition>C</Condition>
+					<FileContentHash>5k3ELPFc0klI9xNe1obgfg==</FileContentHash>
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/include/sam.h</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\templates\main.c</AbsolutePath>
+					<Attribute>template</Attribute>
+					<Category>source</Category>
+					<Condition>C Exe</Condition>
+					<FileContentHash>WQrFDlHoxt1su6gLydX3nw==</FileContentHash>
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/templates/main.c</Name>
+					<SelectString>Main file (.c)</SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\templates\main.cpp</AbsolutePath>
+					<Attribute>template</Attribute>
+					<Category>source</Category>
+					<Condition>C Exe</Condition>
+					<FileContentHash>nU+WlKcYaWh0AWBBS+WVpA==</FileContentHash>
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/templates/main.cpp</Name>
+					<SelectString>Main file (.cpp)</SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\gcc\system_sam4e.c</AbsolutePath>
+					<Attribute>config</Attribute>
+					<Category>source</Category>
+					<Condition>GCC Exe</Condition>
+					<FileContentHash>m8CF/MO72GrHaNeDfmyqKQ==</FileContentHash>
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/gcc/system_sam4e.c</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\gcc\gcc\startup_sam4e.c</AbsolutePath>
+					<Attribute>config</Attribute>
+					<Category>source</Category>
+					<Condition>GCC Exe</Condition>
+					<FileContentHash>szAXKx01Bwj0s3QRO/QeIg==</FileContentHash>
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/gcc/gcc/startup_sam4e.c</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\gcc\gcc\sam4e8c_flash.ld</AbsolutePath>
+					<Attribute>config</Attribute>
+					<Category>linkerScript</Category>
+					<Condition>GCC Exe</Condition>
+					<FileContentHash>r1lCL9zYB70mHA1sDMh5zA==</FileContentHash>
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/gcc/gcc/sam4e8c_flash.ld</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\gcc\gcc\sam4e8c_sram.ld</AbsolutePath>
+					<Attribute>config</Attribute>
+					<Category>other</Category>
+					<Condition>GCC Exe</Condition>
+					<FileContentHash>NaM2WXz68DW2qxnQRodTKQ==</FileContentHash>
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/gcc/gcc/sam4e8c_sram.ld</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\gcc\gcc\sam4e_flash.ld</AbsolutePath>
+					<Attribute>config</Attribute>
+					<Category>other</Category>
+					<Condition>GCC Exe</Condition>
+					<FileContentHash>laqyAzzMcw0wunQRbwbG8g==</FileContentHash>
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/gcc/gcc/sam4e_flash.ld</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+				<d4p1:anyType i:type="FileInfo">
+					<AbsolutePath>C:/Atmel\Studio\7.0\Packs\atmel\SAM4E_DFP\1.1.57\ic.sam4e\gcc\gcc\sam4e_sram.ld</AbsolutePath>
+					<Attribute>config</Attribute>
+					<Category>other</Category>
+					<Condition>GCC Exe</Condition>
+					<FileContentHash>DGERILdgaIDKpPNmESfbSw==</FileContentHash>
+					<FileVersion></FileVersion>
+					<Name>ic.sam4e/gcc/gcc/sam4e_sram.ld</Name>
+					<SelectString></SelectString>
+					<SourcePath></SourcePath>
+				</d4p1:anyType>
+			</Files>
+			<PackName>SAM4E_DFP</PackName>
+			<PackPath>C:/Atmel/Studio/7.0/Packs/atmel/SAM4E_DFP/1.1.57/Atmel.SAM4E_DFP.pdsc</PackPath>
+			<PackVersion>1.1.57</PackVersion>
+			<PresentInProject>true</PresentInProject>
+			<ReferenceConditionId>ATSAM4E8C</ReferenceConditionId>
+			<RteComponents xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+				<d4p1:string></d4p1:string>
+			</RteComponents>
+			<Status>Resolved</Status>
+			<VersionMode>Fixed</VersionMode>
+			<IsComponentInAtProject>true</IsComponentInAtProject>
+		</ProjectComponent>
+	</ProjectComponents>
+</Store>

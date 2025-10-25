@@ -24,7 +24,7 @@ extern "C" {
 #define ENC1_A_PIN                 PIO_PA5
 #define ENC1_B_PIN                 PIO_PA1
 #define ENC1_ENABLE_PIN            PIO_PD17
-#define ENC2_A_PIN                 PIO_PA15  // Not available - used for SPI DRDY
+#define ENC2_A_PIN                 PIO_PA15  // ENC2_A available (SPI not used)
 #define ENC2_B_PIN                 PIO_PA16
 #define ENC2_ENABLE_PIN            PIO_PD27
 

@@ -24,16 +24,24 @@ void board_init(void)
     /***********************
      * SPI0 - ADS1120
      ***********************/
-    // Assign peripheral A functions for SPI0 pins
-    pio_configure(PIOA, PIO_PERIPH_A, PIO_PA14A_SPCK,  PIO_DEFAULT); // SPCK
-    pio_configure(PIOA, PIO_PERIPH_A, PIO_PA12A_MISO,  PIO_DEFAULT); // MISO
-    pio_configure(PIOA, PIO_PERIPH_A, PIO_PA13A_MOSI,  PIO_DEFAULT); // MOSI
+    // SPI and TWI are not used in this project — leave pins as GPIO inputs
+    pio_set_input(PIOA, PIO_PA14, PIO_PULLUP);  // SPCK as input
+    pio_set_input(PIOA, PIO_PA12, PIO_PULLUP);  // MISO as input
+    pio_set_input(PIOA, PIO_PA13, PIO_PULLUP);  // MOSI as input
+    pio_set_input(PIOA, PIO_PA11, PIO_PULLUP);  // CS as input
+    pio_set_input(PIOA, PIO_PA15, PIO_PULLUP);  // Previously DRDY, now free
 
-    // CS for ADS1120 (manual GPIO control)
-    pio_set_output(PIOA, PIO_PA11, 1, 0, 0); // Set high (inactive)
+    /***********************
+     * ENCODERS
+     ***********************/
+    // Encoder 1 inputs (PA5, PA1)
+    pio_set_input(PIOA, PIO_PA5, PIO_PULLUP);
+    pio_set_input(PIOA, PIO_PA1, PIO_PULLUP);
 
-    // DRDY pin as input
-    pio_set_input(PIOA, PIO_PA15, PIO_PULLUP);
+    // Encoder 1 enable (PD17), active-low — default high (disabled)
+    pio_set_output(PIOD, PIO_PD17, 1, 0, 0);
+    // If encoder 2 enable (PD27) exists, set default high (disabled)
+    pio_set_output(PIOD, PIO_PD27, 1, 0, 0);
 
     /***********************
      * TOOL SENSE (PD21)

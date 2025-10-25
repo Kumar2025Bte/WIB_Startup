@@ -35,13 +35,13 @@ bool encoder_init(void)
         pio_configure(PIOA, PIO_INPUT, ENC2_B_PIN, PIO_PULLUP | PIO_DEBOUNCE);
     }
     
-    // Configure enable pins as outputs and drive high (active-high enable)
+    // Configure enable pins as outputs default high (active-low enable)
     pio_configure(PIOD, PIO_OUTPUT_1, ENC1_ENABLE_PIN, PIO_DEFAULT);
-    pio_set(PIOD, ENC1_ENABLE_PIN);  // Enable encoder 1
+    pio_clear(PIOD, ENC1_ENABLE_PIN);  // Enable encoder 1 (active-low)
     
     if (ENCODER2_AVAILABLE) {
         pio_configure(PIOD, PIO_OUTPUT_1, ENC2_ENABLE_PIN, PIO_DEFAULT);
-        pio_set(PIOD, ENC2_ENABLE_PIN);  // Enable encoder 2
+        pio_clear(PIOD, ENC2_ENABLE_PIN);  // Enable encoder 2 (active-low)
     }
     
     // Initialize encoder data structures

@@ -36,6 +36,16 @@ void board_init(void)
     pio_set_input(PIOA, PIO_PA15, PIO_PULLUP);
 
     /***********************
+     * ENCODERS
+     ***********************/
+    // Encoder 1 inputs (PA5, PA1)
+    pio_set_input(PIOA, PIO_PA5, PIO_PULLUP);
+    pio_set_input(PIOA, PIO_PA1, PIO_PULLUP);
+
+    // Encoder 1 enable (PD17), active-high
+    pio_set_output(PIOD, PIO_PD17, 1, 0, 0);
+
+    /***********************
      * TOOL SENSE (PD21)
      ***********************/
     pio_set_input(PIOD, PIO_PD21, PIO_PULLUP);

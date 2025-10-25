@@ -53,16 +53,19 @@ bool encoder_init(void)
         pio_clear(PIOD, ENC2_ENABLE_PIN);  // Enable encoder 2 (active-low)
     }
     // Set up external interrupts on rising edges (X2 decoding on A and B rising)
-    uint32_t enc_mask = (ENC1_A_PIN | ENC1_B_PIN);
+    // Register ONE interrupt source per pin so the callback 'mask' uniquely identifies the pin.
+    pio_handler_set_pin(ENC1_A_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+    pio_enable_pin_interrupt(ENC1_A_PIN);
+    pio_handler_set_pin(ENC1_B_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+    pio_enable_pin_interrupt(ENC1_B_PIN);
     if (ENCODER2_AVAILABLE) {
-        enc_mask |= (ENC2_A_PIN | ENC2_B_PIN);
+        pio_handler_set_pin(ENC2_A_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+        pio_enable_pin_interrupt(ENC2_A_PIN);
+        pio_handler_set_pin(ENC2_B_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+        pio_enable_pin_interrupt(ENC2_B_PIN);
     }
-
-    // Attach handler for PIOA
-    pio_handler_set(PIOA, ID_PIOA, enc_mask, (PIO_IT_EDGE | PIO_IT_RISE_EDGE), encoder_pioa_isr);
-    pio_enable_interrupt(PIOA, enc_mask);
-    // Set NVIC priority to be safe with FreeRTOS FromISR API usage
-    pio_handler_set_priority(PIOA, PIOA_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+    // Keep GPIO IRQ at lowest urgency to avoid starving SysTick/CAN tasks
+    pio_handler_set_priority(PIOA, PIOA_IRQn, configLIBRARY_LOWEST_INTERRUPT_PRIORITY);
 
     // Initialize encoder data structures
     encoder1_data.position = 0;
@@ -256,8 +259,8 @@ void encoder_task(void *arg)
 // ===== Interrupt-driven quadrature decoding (X2 on rising edges) =====
 static inline uint32_t get_time_ms_from_isr(void)
 {
-    // Use FreeRTOS tick count in ISR context
-    return xTaskGetTickCountFromISR() * portTICK_PERIOD_MS;
+    // Avoid calling FreeRTOS API from GPIO ISR; leave as no-op for now
+    return 0u;
 }
 
 static inline void encoder_handle_rising_on_a(encoder_data_t *enc_data, uint32_t other_level)
@@ -271,7 +274,7 @@ static inline void encoder_handle_rising_on_a(encoder_data_t *enc_data, uint32_t
         enc_data->direction = 2u;
     }
     enc_data->pulse_count++;
-    enc_data->last_update_time = get_time_ms_from_isr();
+    // Timestamping omitted to keep ISR minimal
 }
 
 static inline void encoder_handle_rising_on_b(encoder_data_t *enc_data, uint32_t other_level)
@@ -285,32 +288,42 @@ static inline void encoder_handle_rising_on_b(encoder_data_t *enc_data, uint32_t
         enc_data->direction = 1u;
     }
     enc_data->pulse_count++;
-    enc_data->last_update_time = get_time_ms_from_isr();
+    // Timestamping omitted to keep ISR minimal
 }
 
 static void encoder_pioa_isr(uint32_t id, uint32_t mask)
 {
-    (void)id;
-
-    // Encoder 1
-    if (mask & ENC1_A_PIN) {
-        uint32_t b = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC1_B_PIN) ? 1u : 0u;
-        encoder_handle_rising_on_a(&encoder1_data, b);
-    }
-    if (mask & ENC1_B_PIN) {
-        uint32_t a = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC1_A_PIN) ? 1u : 0u;
-        encoder_handle_rising_on_b(&encoder1_data, a);
+    if (id != ID_PIOA) {
+        return;
     }
 
-    // Encoder 2
-    if (ENCODER2_AVAILABLE) {
-        if (mask & ENC2_A_PIN) {
-            uint32_t b2 = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC2_B_PIN) ? 1u : 0u;
-            encoder_handle_rising_on_a(&encoder2_data, b2);
+    // Each registration is per-pin, so 'mask' equals the specific pin that triggered.
+    switch (mask) {
+        case ENC1_A_PIN: {
+            uint32_t b = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC1_B_PIN) ? 1u : 0u;
+            encoder_handle_rising_on_a(&encoder1_data, b);
+            break;
         }
-        if (mask & ENC2_B_PIN) {
-            uint32_t a2 = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC2_A_PIN) ? 1u : 0u;
-            encoder_handle_rising_on_b(&encoder2_data, a2);
+        case ENC1_B_PIN: {
+            uint32_t a = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC1_A_PIN) ? 1u : 0u;
+            encoder_handle_rising_on_b(&encoder1_data, a);
+            break;
         }
+        case ENC2_A_PIN: {
+            if (ENCODER2_AVAILABLE) {
+                uint32_t b2 = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC2_B_PIN) ? 1u : 0u;
+                encoder_handle_rising_on_a(&encoder2_data, b2);
+            }
+            break;
+        }
+        case ENC2_B_PIN: {
+            if (ENCODER2_AVAILABLE) {
+                uint32_t a2 = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC2_A_PIN) ? 1u : 0u;
+                encoder_handle_rising_on_b(&encoder2_data, a2);
+            }
+            break;
+        }
+        default:
+            break;
     }
 }

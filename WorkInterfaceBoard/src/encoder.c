@@ -3,10 +3,18 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "can_app.h"
+#include "pio_handler.h"
+#include "FreeRTOSConfig.h"
 
 // Global encoder data structures
 static encoder_data_t encoder1_data = {0};
 static encoder_data_t encoder2_data = {0};
+
+// Forward declarations
+static void encoder_pioa_isr(uint32_t id, uint32_t mask);
+static inline void encoder_handle_rising_on_a(encoder_data_t *enc_data, uint32_t other_level);
+static inline void encoder_handle_rising_on_b(encoder_data_t *enc_data, uint32_t other_level);
+static inline uint32_t get_time_ms_from_isr(void);
 
 // CAN message IDs for encoder data
 #define CAN_ID_ENCODER1_DIR_VEL    0x130u  // Encoder 1 direction and velocity
@@ -27,12 +35,13 @@ bool encoder_init(void)
     pmc_enable_periph_clk(ID_PIOA);
     pmc_enable_periph_clk(ID_PIOD);
     
-    // Configure encoder pins as inputs with pull-up
-    pio_configure(PIOA, PIO_INPUT, ENC1_A_PIN, PIO_PULLUP | PIO_DEBOUNCE);
-    pio_configure(PIOA, PIO_INPUT, ENC1_B_PIN, PIO_PULLUP | PIO_DEBOUNCE);
+    // Configure encoder pins as inputs with pull-up and fast deglitch filter
+    // Note: Use PIO_DEGLITCH (synchronous) instead of slow-clock PIO_DEBOUNCE to avoid missing fast pulses
+    pio_configure(PIOA, PIO_INPUT, ENC1_A_PIN, PIO_PULLUP | PIO_DEGLITCH);
+    pio_configure(PIOA, PIO_INPUT, ENC1_B_PIN, PIO_PULLUP | PIO_DEGLITCH);
     if (ENCODER2_AVAILABLE) {
-        pio_configure(PIOA, PIO_INPUT, ENC2_A_PIN, PIO_PULLUP | PIO_DEBOUNCE);
-        pio_configure(PIOA, PIO_INPUT, ENC2_B_PIN, PIO_PULLUP | PIO_DEBOUNCE);
+        pio_configure(PIOA, PIO_INPUT, ENC2_A_PIN, PIO_PULLUP | PIO_DEGLITCH);
+        pio_configure(PIOA, PIO_INPUT, ENC2_B_PIN, PIO_PULLUP | PIO_DEGLITCH);
     }
     
     // Configure enable pins as outputs default high (active-low enable)
@@ -43,7 +52,18 @@ bool encoder_init(void)
         pio_configure(PIOD, PIO_OUTPUT_1, ENC2_ENABLE_PIN, PIO_DEFAULT);
         pio_clear(PIOD, ENC2_ENABLE_PIN);  // Enable encoder 2 (active-low)
     }
-    
+    // Set up external interrupts on rising edges (X2 decoding on A and B rising)
+    uint32_t enc_mask = (ENC1_A_PIN | ENC1_B_PIN);
+    if (ENCODER2_AVAILABLE) {
+        enc_mask |= (ENC2_A_PIN | ENC2_B_PIN);
+    }
+
+    // Attach handler for PIOA
+    pio_handler_set(PIOA, ID_PIOA, enc_mask, (PIO_IT_EDGE | PIO_IT_RISE_EDGE), encoder_pioa_isr);
+    pio_enable_interrupt(PIOA, enc_mask);
+    // Set NVIC priority to be safe with FreeRTOS FromISR API usage
+    pio_handler_set_priority(PIOA, PIOA_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+
     // Initialize encoder data structures
     encoder1_data.position = 0;
     encoder1_data.velocity = 0;
@@ -70,119 +90,21 @@ bool encoder_init(void)
     encoder2_data.last_direction_change = 0;
     encoder2_data.pulse_count = 0;
     encoder2_data.velocity_window_start = 0;
-    
+    // Initialize initial states from pins
+    encoder1_data.state_a = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC1_A_PIN) ? 1u : 0u;
+    encoder1_data.state_b = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC1_B_PIN) ? 1u : 0u;
+    if (ENCODER2_AVAILABLE) {
+        encoder2_data.state_a = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC2_A_PIN) ? 1u : 0u;
+        encoder2_data.state_b = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC2_B_PIN) ? 1u : 0u;
+    }
+
     return true;
 }
 
+// Polling no longer used; retained for compatibility (no-op)
 void encoder_poll(encoder_data_t* enc_data)
 {
-    // Skip polling if this is encoder2 and it's not available
-    if (enc_data == &encoder2_data && !ENCODER2_AVAILABLE) {
-        return;
-    }
-    
-    // Read current encoder states
-    uint8_t current_a = (pio_get(PIOA, PIO_TYPE_PIO_INPUT, enc_data == &encoder1_data ? ENC1_A_PIN : ENC2_A_PIN)) ? 1 : 0;
-    uint8_t current_b = (pio_get(PIOA, PIO_TYPE_PIO_INPUT, enc_data == &encoder1_data ? ENC1_B_PIN : ENC2_B_PIN)) ? 1 : 0;
-    
-    // Get current time (using FreeRTOS tick count)
-    uint32_t current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
-    
-    // Check for state change (quadrature decoding)
-    if (current_a != enc_data->state_a || current_b != enc_data->state_b) {
-        // Store previous states
-        enc_data->prev_state_a = enc_data->state_a;
-        enc_data->prev_state_b = enc_data->state_b;
-        
-        // Update current states
-        enc_data->state_a = current_a;
-        enc_data->state_b = current_b;
-        
-        // Quadrature decoding logic
-        // Forward: A leads B (A changes first)
-        // Reverse: B leads A (B changes first)
-        uint8_t new_direction = 0;
-        bool position_changed = false;
-        
-        if (enc_data->prev_state_a == 0 && enc_data->prev_state_b == 0) {
-            if (enc_data->state_a == 1 && enc_data->state_b == 0) {
-                // Forward: A leads
-                enc_data->position++;
-                new_direction = 1;
-                enc_data->pulse_count++;
-                position_changed = true;
-            } else if (enc_data->state_a == 0 && enc_data->state_b == 1) {
-                // Reverse: B leads
-                enc_data->position--;
-                new_direction = 2;
-                enc_data->pulse_count++;
-                position_changed = true;
-            }
-        } else if (enc_data->prev_state_a == 1 && enc_data->prev_state_b == 0) {
-            if (enc_data->state_a == 1 && enc_data->state_b == 1) {
-                // Forward: A leads
-                enc_data->position++;
-                new_direction = 1;
-                enc_data->pulse_count++;
-                position_changed = true;
-            } else if (enc_data->state_a == 0 && enc_data->state_b == 0) {
-                // Reverse: B leads
-                enc_data->position--;
-                new_direction = 2;
-                enc_data->pulse_count++;
-                position_changed = true;
-            }
-        } else if (enc_data->prev_state_a == 1 && enc_data->prev_state_b == 1) {
-            if (enc_data->state_a == 0 && enc_data->state_b == 1) {
-                // Forward: A leads
-                enc_data->position++;
-                new_direction = 1;
-                enc_data->pulse_count++;
-                position_changed = true;
-            } else if (enc_data->state_a == 1 && enc_data->state_b == 0) {
-                // Reverse: B leads
-                enc_data->position--;
-                new_direction = 2;
-                enc_data->pulse_count++;
-                position_changed = true;
-            }
-        } else if (enc_data->prev_state_a == 0 && enc_data->prev_state_b == 1) {
-            if (enc_data->state_a == 0 && enc_data->state_b == 0) {
-                // Forward: A leads
-                enc_data->position++;
-                new_direction = 1;
-                enc_data->pulse_count++;
-                position_changed = true;
-            } else if (enc_data->state_a == 1 && enc_data->state_b == 1) {
-                // Reverse: B leads
-                enc_data->position--;
-                new_direction = 2;
-                enc_data->pulse_count++;
-                position_changed = true;
-            }
-        }
-        
-        // Update direction only if change is allowed (debouncing)
-        if (position_changed && is_direction_change_allowed(enc_data, current_time, new_direction)) {
-            enc_data->direction = new_direction;
-            enc_data->last_direction_change = current_time;
-        }
-        
-        enc_data->last_update_time = current_time;
-    } else {
-        // No state change - check if we should reset direction to stopped
-        if (current_time - enc_data->last_update_time > 50) { // 50ms timeout
-            enc_data->direction = 0; // Stopped
-        }
-    }
-    
-    // Calculate velocity periodically
-    if (current_time - enc_data->velocity_window_start >= VELOCITY_CALC_WINDOW_MS) {
-        enc_data->velocity = calculate_velocity(enc_data, current_time);
-        apply_velocity_smoothing(enc_data);
-        enc_data->velocity_window_start = current_time;
-        enc_data->pulse_count = 0;
-    }
+    (void)enc_data;
 }
 
 int32_t calculate_velocity(encoder_data_t* enc_data, uint32_t current_time)
@@ -195,8 +117,14 @@ int32_t calculate_velocity(encoder_data_t* enc_data, uint32_t current_time)
     uint32_t time_diff = current_time - enc_data->velocity_window_start;
     if (time_diff == 0) return 0;
     
+    // Snapshot and reset pulse accumulator atomically
+    taskENTER_CRITICAL();
+    uint32_t pulses = enc_data->pulse_count;
+    enc_data->pulse_count = 0;
+    taskEXIT_CRITICAL();
+
     // Calculate velocity in pulses per second
-    int32_t velocity_pulses_per_sec = (enc_data->pulse_count * 1000) / time_diff;
+    int32_t velocity_pulses_per_sec = (pulses * 1000) / time_diff;
     
     // Convert from pulses per second to degrees per second
     // Formula: (pulses/sec) * (360 degrees/rev) / (pulses/rev) = degrees/sec
@@ -255,12 +183,19 @@ void encoder_task(void *arg)
     vTaskDelay(pdMS_TO_TICKS(100));
     
     for (;;) {
-        // Poll both encoders
-        encoder_poll(&encoder1_data);
-        if (ENCODER2_AVAILABLE) {
-            encoder_poll(&encoder2_data);
+        // Periodically compute velocity windows (interrupts update pulse counts and position)
+        uint32_t current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+        if (current_time - encoder1_data.velocity_window_start >= VELOCITY_CALC_WINDOW_MS) {
+            encoder1_data.velocity = calculate_velocity(&encoder1_data, current_time);
+            apply_velocity_smoothing(&encoder1_data);
+            encoder1_data.velocity_window_start = current_time;
         }
-        
+        if (ENCODER2_AVAILABLE && (current_time - encoder2_data.velocity_window_start >= VELOCITY_CALC_WINDOW_MS)) {
+            encoder2_data.velocity = calculate_velocity(&encoder2_data, current_time);
+            apply_velocity_smoothing(&encoder2_data);
+            encoder2_data.velocity_window_start = current_time;
+        }
+
         // Send encoder 1 data over CAN
         uint8_t enc1_data[6];
         enc1_data[0] = (uint8_t)(encoder1_data.direction & 0xFF);
@@ -313,7 +248,69 @@ void encoder_task(void *arg)
             can_app_tx(CAN_ID_ENCODER2_DIR_VEL, enc2_data, 6);
         }
         
-        // Wait for next polling cycle
+        // Task period
         vTaskDelay(pdMS_TO_TICKS(ENCODER_POLLING_RATE_MS));
+    }
+}
+
+// ===== Interrupt-driven quadrature decoding (X2 on rising edges) =====
+static inline uint32_t get_time_ms_from_isr(void)
+{
+    // Use FreeRTOS tick count in ISR context
+    return xTaskGetTickCountFromISR() * portTICK_PERIOD_MS;
+}
+
+static inline void encoder_handle_rising_on_a(encoder_data_t *enc_data, uint32_t other_level)
+{
+    // A rose; if B == 0 -> forward, else reverse (matches prior software decoding conventions)
+    if (other_level == 0) {
+        enc_data->position++;
+        enc_data->direction = 1u;
+    } else {
+        enc_data->position--;
+        enc_data->direction = 2u;
+    }
+    enc_data->pulse_count++;
+    enc_data->last_update_time = get_time_ms_from_isr();
+}
+
+static inline void encoder_handle_rising_on_b(encoder_data_t *enc_data, uint32_t other_level)
+{
+    // B rose; if A == 0 -> reverse, else forward (matches prior software decoding conventions)
+    if (other_level == 0) {
+        enc_data->position--;
+        enc_data->direction = 2u;
+    } else {
+        enc_data->position++;
+        enc_data->direction = 1u;
+    }
+    enc_data->pulse_count++;
+    enc_data->last_update_time = get_time_ms_from_isr();
+}
+
+static void encoder_pioa_isr(uint32_t id, uint32_t mask)
+{
+    (void)id;
+
+    // Encoder 1
+    if (mask & ENC1_A_PIN) {
+        uint32_t b = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC1_B_PIN) ? 1u : 0u;
+        encoder_handle_rising_on_a(&encoder1_data, b);
+    }
+    if (mask & ENC1_B_PIN) {
+        uint32_t a = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC1_A_PIN) ? 1u : 0u;
+        encoder_handle_rising_on_b(&encoder1_data, a);
+    }
+
+    // Encoder 2
+    if (ENCODER2_AVAILABLE) {
+        if (mask & ENC2_A_PIN) {
+            uint32_t b2 = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC2_B_PIN) ? 1u : 0u;
+            encoder_handle_rising_on_a(&encoder2_data, b2);
+        }
+        if (mask & ENC2_B_PIN) {
+            uint32_t a2 = pio_get(PIOA, PIO_TYPE_PIO_INPUT, ENC2_A_PIN) ? 1u : 0u;
+            encoder_handle_rising_on_b(&encoder2_data, a2);
+        }
     }
 }

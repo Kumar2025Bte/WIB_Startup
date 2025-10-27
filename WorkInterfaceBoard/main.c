@@ -44,11 +44,11 @@ int main (void)
 	/* Initialize TIB hardware */
 	WIB_Init();
 	
-	/* Initialize CAN controller */
-	if (!can_app_init()) {
-		// CAN initialization failed - handle error
-		while(1); // Stop execution if CAN fails
-	}
+// 	/* Initialize CAN controller */
+// 	if (!can_app_init()) {
+// 		// CAN initialization failed - handle error
+// 		while(1); // Stop execution if CAN fails
+// 	}
 	
 	/* Note: Encoder initialization is handled in the encoder_task */
 	

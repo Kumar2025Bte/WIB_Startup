@@ -28,15 +28,15 @@ void task_test(void *arg){
 	uint8_t msb=0xAA, lsb=0x55; 
 	while(1) {
 		uint8_t payload[2] = { msb, lsb };
-		can_app_tx(CAN_ID_LOADCELL, payload, 2); // Publish loadcell sample over CAN
+		//can_app_tx(CAN_ID_LOADCELL, payload, 2); // Publish loadcell sample over CAN
 		vTaskDelay(pdMS_TO_TICKS(100)); // Sample at ~500 Hz  == 2 milli seconds
 		}
 }
 void create_application_tasks(void)
 {
 	
-	xTaskCreate(can_rx_task, "canrx", 512, 0, tskIDLE_PRIORITY+2, 0); // CAN RX handler task
-	xTaskCreate(can_status_task, "canstatus", 256, 0, tskIDLE_PRIORITY+1, 0); // CAN status monitoring task
+// 	xTaskCreate(can_rx_task, "canrx", 512, 0, tskIDLE_PRIORITY+2, 0); // CAN RX handler task
+// 	xTaskCreate(can_status_task, "canstatus", 256, 0, tskIDLE_PRIORITY+1, 0); // CAN status monitoring task
 	xTaskCreate(task_test, "testTask", 512, 0, tskIDLE_PRIORITY+2, 0); // Load cell sampling task
-	xTaskCreate(encoder_task, "encoder", 512, 0, tskIDLE_PRIORITY+2, 0); // Encoder polling and CAN transmission task
+//	xTaskCreate(encoder_task, "encoder", 512, 0, tskIDLE_PRIORITY+2, 0); // Encoder polling and CAN transmission task
 } // End create_application_tasks

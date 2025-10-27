@@ -53,16 +53,16 @@ bool encoder_init(void)
         pio_clear(PIOD, ENC2_ENABLE_PIN);  // Enable encoder 2 (active-low)
     }
     // Set up external interrupts on rising edges (X2 decoding on A and B rising)
-    // Register ONE interrupt source per pin so the callback 'mask' uniquely identifies the pin.
-    pio_handler_set_pin(ENC1_A_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
-    pio_enable_pin_interrupt(ENC1_A_PIN);
-    pio_handler_set_pin(ENC1_B_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
-    pio_enable_pin_interrupt(ENC1_B_PIN);
+    // NOTE: Use group-based registration with pin MASKS, since ENC*_PIN macros are masks (PIO_PAx).
+    pio_handler_set(PIOA, ID_PIOA, ENC1_A_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+    pio_enable_interrupt(PIOA, ENC1_A_PIN);
+    pio_handler_set(PIOA, ID_PIOA, ENC1_B_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+    pio_enable_interrupt(PIOA, ENC1_B_PIN);
     if (ENCODER2_AVAILABLE) {
-        pio_handler_set_pin(ENC2_A_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
-        pio_enable_pin_interrupt(ENC2_A_PIN);
-        pio_handler_set_pin(ENC2_B_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
-        pio_enable_pin_interrupt(ENC2_B_PIN);
+        pio_handler_set(PIOA, ID_PIOA, ENC2_A_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+        pio_enable_interrupt(PIOA, ENC2_A_PIN);
+        pio_handler_set(PIOA, ID_PIOA, ENC2_B_PIN, PIO_IT_RISE_EDGE, encoder_pioa_isr);
+        pio_enable_interrupt(PIOA, ENC2_B_PIN);
     }
     // Keep GPIO IRQ at lowest urgency to avoid starving SysTick/CAN tasks
     pio_handler_set_priority(PIOA, PIOA_IRQn, configLIBRARY_LOWEST_INTERRUPT_PRIORITY);

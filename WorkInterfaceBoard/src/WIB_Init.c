@@ -5,12 +5,15 @@
  *  Author: MKumar
  */ 
 #include "WIB_Init.h"
+#include "encoder.h"
 int tool_type = 9;
 unsigned char who_lis2 = 0;
 int WIB_Init()
 {
 	SystemInit();
 	board_init();
+    // Configure encoder pins as external interrupts and start pulse counting
+    encoder_init();
 	/* Replace with your application code */
 //	spi0_init(1000000, false);   // 1 MHz, MSB-first (lsbfirst=false)
 								//initialise SPI0 interface for Load Cell ADS1120
